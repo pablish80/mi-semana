@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0e0c">
+<title>Mi Semana</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0e0c;
+  --surface: #1a1916;
+  --border: #2e2c28;
+  --accent: #e8c96d;
+  --text: #f0ece0;
+  --muted: #857f6e;
+  --slot: 52px;
+  --col: 120px;
+
+  --c-trabajo: #FAC775;   --c-trabajo-t: #412402;   --c-trabajo-b: #BA7517;
+  --c-prohps:  #CECBF6;   --c-prohps-t:  #26215C;   --c-prohps-b:  #534AB7;
+  --c-estudio: #B5D4F4;   --c-estudio-t: #042C53;   --c-estudio-b: #185FA5;
+  --c-clase:   #C0DD97;   --c-clase-t:   #173404;   --c-clase-b:   #3B6D11;
+  --c-ejercicio:#9FE1CB;  --c-ejercicio-t:#04342C;  --c-ejercicio-b:#0F6E56;
+  --c-social:  #F4C0D1;   --c-social-t:  #4B1528;   --c-social-b:  #993556;
+  --c-helena:  #F7C1C1;   --c-helena-t:  #501313;   --c-helena-b:  #A32D2D;
+  --c-ocio:    #F5C4B3;   --c-ocio-t:    #4A1B0C;   --c-ocio-b:    #993C1D;
+  --c-libre:   #2a2825;   --c-libre-t:   #857f6e;   --c-libre-b:   #3e3b35;
+  --c-desplaz: #D3D1C7;   --c-desplaz-t: #2C2C2A;   --c-desplaz-b: #888780;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── HEADER ── */
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.app-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent); }
+.week-label { font-size: 10px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.btn-add {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent); color: #1a1610;
+  border: none; font-size: 22px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+
+/* ── DAY TABS ── */
+.day-tabs {
+  display: flex; gap: 4px; padding: 8px 12px;
+  overflow-x: auto; flex-shrink: 0;
+  scrollbar-width: none;
+}
+.day-tabs::-webkit-scrollbar { display: none; }
+.day-tab {
+  flex-shrink: 0; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted);
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  cursor: pointer; transition: all .15s;
+}
+.day-tab.active {
+  background: var(--accent); color: #1a1610;
+  border-color: var(--accent); font-weight: 500;
+}
+
+/* ── CALENDAR GRID ── */
+.cal-scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  position: relative;
+}
+
+.time-col { position: sticky; left: 0; z-index: 5; background: var(--bg); }
+.time-slot {
+  height: var(--slot); display: flex; align-items: flex-start;
+  justify-content: flex-end; padding: 3px 8px 0 0;
+  font-size: 9px; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.events-col { position: relative; }
+.hour-row {
+  height: var(--slot);
+  border-bottom: 1px solid var(--border);
+}
+.hour-row.half::after {
+  content: ''; display: block;
+  position: absolute; left: 44px; right: 0;
+  top: calc(var(--slot) / 2);
+  border-top: 1px dashed rgba(255,255,255,.06);
+}
+
+/* ── EVENT BLOCKS ── */
+.event {
+  position: absolute; left: 6px; right: 6px;
+  border-radius: 6px; padding: 5px 7px;
+  border-left: 3px solid;
+  overflow: hidden; cursor: pointer;
+  touch-action: none;
+  transition: box-shadow .15s;
+  z-index: 2;
+}
+.event.dragging { z-index: 100; opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.event-title { font-size: 10px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-time  { font-size: 9px; opacity: .75; margin-top: 1px; }
+
+.resize-handle {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 10px; cursor: ns-resize;
+  display: flex; align-items: center; justify-content: center;
+}
+.resize-handle::after {
+  content: ''; width: 24px; height: 2px;
+  background: currentColor; opacity: .4; border-radius: 1px;
+}
+
+/* Category colors */
+.ev-trabajo   { background: var(--c-trabajo);   color: var(--c-trabajo-t);   border-color: var(--c-trabajo-b); }
+.ev-prohps    { background: var(--c-prohps);    color: var(--c-prohps-t);    border-color: var(--c-prohps-b); }
+.ev-estudio   { background: var(--c-estudio);   color: var(--c-estudio-t);   border-color: var(--c-estudio-b); }
+.ev-clase     { background: var(--c-clase);     color: var(--c-clase-t);     border-color: var(--c-clase-b); }
+.ev-ejercicio { background: var(--c-ejercicio); color: var(--c-ejercicio-t); border-color: var(--c-ejercicio-b); }
+.ev-social    { background: var(--c-social);    color: var(--c-social-t);    border-color: var(--c-social-b); }
+.ev-helena    { background: var(--c-helena);    color: var(--c-helena-t);    border-color: var(--c-helena-b); }
+.ev-ocio      { background: var(--c-ocio);      color: var(--c-ocio-t);      border-color: var(--c-ocio-b); }
+.ev-libre     { background: var(--c-libre);     color: var(--c-libre-t);     border-color: var(--c-libre-b); }
+.ev-desplaz   { background: var(--c-desplaz);   color: var(--c-desplaz-t);   border-color: var(--c-desplaz-b); }
+
+/* ── MODAL ── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: flex-end;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  width: 100%; background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px 36px;
+  transform: translateY(100%); transition: transform .25s ease;
+  border-top: 1px solid var(--border);
+}
+.modal-backdrop.open .modal { transform: translateY(0); }
+
+.modal-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 20px;
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--accent); margin-bottom: 16px; }
+
+.form-row { margin-bottom: 14px; }
+.form-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; display: block; }
+.form-input {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 10px 12px; outline: none;
+}
+.form-input:focus { border-color: var(--accent); }
+
+.cat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cat-btn {
+  padding: 6px 2px; border-radius: 6px; border: 2px solid transparent;
+  font-size: 8px; font-family: 'DM Mono', monospace;
+  text-align: center; cursor: pointer; transition: border-color .15s;
+}
+.cat-btn.selected { border-color: var(--text); }
+
+.time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn-save {
+  flex: 1; padding: 13px; border-radius: 10px;
+  background: var(--accent); color: #1a1610;
+  font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer;
+}
+.btn-delete {
+  padding: 13px 18px; border-radius: 10px;
+  background: transparent; color: #E24B4A;
+  border: 1px solid #E24B4A;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  cursor: pointer;
+}
+.btn-cancel {
+  padding: 13px 18px; border-radius: 10px;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  cursor: pointer;
+}
+
+/* ── CALLS BOX ── */
+.calls-section {
+  padding: 10px 14px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.calls-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 6px; }
+.calls-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  font-size: 10px; padding: 3px 10px; border-radius: 99px; border: 1px solid;
+}
+.chip-weekly  { background: var(--c-social); color: var(--c-social-t); border-color: var(--c-social-b); }
+.chip-monthly { background: var(--c-trabajo); color: var(--c-trabajo-t); border-color: var(--c-trabajo-b); }
+
+/* ── VIEW TOGGLE ── */
+.view-toggle {
+  display: flex; gap: 4px;
+  background: var(--surface); border-radius: 8px;
+  padding: 3px; border: 1px solid var(--border);
+}
+.view-btn {
+  padding: 5px 10px; border-radius: 5px; border: none;
+  background: transparent; color: var(--muted);
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  cursor: pointer; transition: all .15s;
+}
+.view-btn.active { background: var(--accent); color: #1a1610; font-weight: 500; }
+
+/* ── WEEK VIEW ── */
+.week-grid-wrap { overflow-x: auto; overflow-y: auto; flex: 1; }
+.week-grid {
+  display: grid;
+  grid-template-columns: 36px repeat(7, 1fr);
+  min-width: 520px;
+}
+.wg-head-empty { position: sticky; top: 0; z-index: 10; background: var(--bg); }
+.wg-head-cell {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface);
+  padding: 6px 2px; text-align: center;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.wg-head-cell .dn { display: block; font-size: 10px; font-weight: 500; color: var(--text); }
+.wg-head-cell .dd { display: block; font-size: 8px; color: var(--muted); }
+.wg-head-cell.active-day { background: var(--accent); }
+.wg-head-cell.active-day .dn, .wg-head-cell.active-day .dd { color: #1a1610; }
+
+.wg-time-col { border-right: 1px solid var(--border); }
+.wg-time-slot {
+  height: var(--slot); display: flex; align-items: flex-start;
+  justify-content: flex-end; padding: 3px 5px 0 0;
+  font-size: 8px; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.wg-day-col {
+  position: relative;
+  border-left: 1px solid var(--border);
+}
+.wg-hour-row {
+  height: var(--slot);
+  border-bottom: 1px solid var(--border);
+  position: absolute; left: 0; right: 0;
+}
+.wg-event {
+  position: absolute; left: 1px; right: 1px;
+  border-radius: 3px; padding: 1px 3px;
+  border-left: 2px solid; overflow: hidden;
+  font-size: 8px; line-height: 1.2;
+  cursor: pointer; z-index: 2;
+  transition: opacity .15s;
+}
+.wg-event:hover { opacity: .8; }
+.wg-event-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">Mi Semana</div>
+    <div class="week-label" id="week-label">23 – 29 Mar 2026</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-view-week" onclick="setView('week')">Semana</button>
+      <button class="view-btn" id="btn-view-day" onclick="setView('day')">Día</button>
+    </div>
+    <button class="btn-add" id="btn-add" title="Añadir bloque">+</button>
+  </div>
+</div>
+
+<div class="day-tabs" id="day-tabs" style="display:none"></div>
+<div class="cal-scroll" id="cal-scroll" style="display:none">
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+<div class="week-grid-wrap" id="week-grid-wrap">
+  <div class="week-grid" id="week-grid"></div>
+</div>
+
+<div class="calls-section" id="calls-section">
+  <div class="calls-label">Llamadas esta semana</div>
+  <div class="calls-chips">
+    <span class="chip chip-weekly">Ricky</span>
+    <span class="chip chip-monthly">Donald</span>
+    <span class="chip chip-monthly">Dani G.</span>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Editar bloque</div>
+
+    <div class="form-row">
+      <label class="form-label">Título</label>
+      <input class="form-input" id="inp-title" type="text" placeholder="Nombre del bloque">
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Notas</label>
+      <input class="form-input" id="inp-note" type="text" placeholder="Descripción opcional">
+    </div>
+
+    <div class="form-row time-row">
+      <div>
+        <label class="form-label">Inicio</label>
+        <input class="form-input" id="inp-start" type="time">
+      </div>
+      <div>
+        <label class="form-label">Fin</label>
+        <input class="form-input" id="inp-end" type="time">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Categoría</label>
+      <div class="cat-grid" id="cat-grid"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="btn-cancel">Cancelar</button>
+      <button class="btn-save" id="btn-save">Guardar</button>
+      <button class="btn-delete" id="btn-delete" style="display:none">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id:'trabajo',   label:'Trabajo MD',  cls:'ev-trabajo' },
+  { id:'prohps',    label:'PROHPS 3D',   cls:'ev-prohps' },
+  { id:'estudio',   label:'Estudio',     cls:'ev-estudio' },
+  { id:'clase',     label:'Clase',       cls:'ev-clase' },
+  { id:'ejercicio', label:'Ejercicio',   cls:'ev-ejercicio' },
+  { id:'social',    label:'Social',      cls:'ev-social' },
+  { id:'helena',    label:'Helena',      cls:'ev-helena' },
+  { id:'ocio',      label:'Ocio',        cls:'ev-ocio' },
+  { id:'libre',     label:'Libre',       cls:'ev-libre' },
+  { id:'desplaz',   label:'Desplaz.',    cls:'ev-desplaz' },
+];
+
+const START_H = 7, END_H = 24, TOTAL = END_H - START_H;
+const SLOT = 52; // px per hour
+
+const DAYS = [
+  { name:'Lun', date:'23 Mar' },
+  { name:'Mar', date:'24 Mar' },
+  { name:'Mié', date:'25 Mar' },
+  { name:'Jue', date:'26 Mar' },
+  { name:'Vie', date:'27 Mar' },
+  { name:'Sáb', date:'28 Mar' },
+  { name:'Dom', date:'29 Mar' },
+];
+
+const DEFAULT_SCHEDULE = [
+  [ // LUN
+    { id:uid(), t:'Desayuno Ricky', c:'social', s:8, e:9, n:'Desayuno quincenal. Si no toca, tiempo libre.' },
+    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:12, n:'3h de trabajo para MD.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:13.5, e:16.5, n:'3h de modelado 3D.' },
+    { id:uid(), t:'Estudio', c:'estudio', s:16.5, e:17.5, n:'1h — Comfy UI / Unreal Engine.' },
+    { id:uid(), t:'Llamada Ricky', c:'social', s:19, e:19.5, n:'Llamada semanal ~30 min.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura antes de dormir.' },
+  ],
+  [ // MAR
+    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:12, n:'3h para MD.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'Desplazamiento', c:'desplaz', s:13.5, e:13.75, n:'15 min al club.' },
+    { id:uid(), t:'Entreno billar', c:'social', s:13.75, e:15.75, n:'2h de entrenamiento.' },
+    { id:uid(), t:'Vuelta casa', c:'desplaz', s:15.75, e:16, n:'15 min de vuelta.' },
+    { id:uid(), t:'Estudio', c:'estudio', s:16, e:17, n:'1h — Comfy UI / Unreal.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:17, e:19, n:'2h de modelado.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura.' },
+  ],
+  [ // MIÉ
+    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:12, n:'3h para MD.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:13.5, e:16.5, n:'3h de modelado.' },
+    { id:uid(), t:'Estudio', c:'estudio', s:16.5, e:17.5, n:'1h — Comfy UI / Unreal. Completa 6h.' },
+    { id:uid(), t:'Llamada Donald', c:'social', s:19, e:19.5, n:'Contacto mensual ~30 min.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura.' },
+  ],
+  [ // JUE
+    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:11, n:'2h para MD. Cierra las 12h.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:11, e:12, n:'1h — completa 12h del modelo.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'Desplazamiento', c:'desplaz', s:13.5, e:13.75, n:'15 min al club.' },
+    { id:uid(), t:'Entreno billar', c:'social', s:13.75, e:15.75, n:'2h de entrenamiento.' },
+    { id:uid(), t:'Vuelta casa', c:'desplaz', s:15.75, e:16, n:'15 min de vuelta.' },
+    { id:uid(), t:'Prep. clase', c:'libre', s:16, e:17.75, n:'Descansa antes de ECO.' },
+    { id:uid(), t:'Clase ECO', c:'clase', s:18, e:19, n:'Clase online ECO. Sin cena.' },
+    { id:uid(), t:'Llamada Dani G.', c:'social', s:19, e:19.5, n:'Contacto mensual ~30 min.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:19.5, e:23, n:'Sin cena este día. Lectura.' },
+  ],
+  [ // VIE
+    { id:uid(), t:'Mañana libre', c:'libre', s:9, e:12, n:'Viernes sin trabajo MD.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'Desplazamiento', c:'desplaz', s:14.25, e:14.5, n:'15 min al club.' },
+    { id:uid(), t:'Entreno billar', c:'social', s:14.5, e:17, n:'14:30–17:00h. Estarás fuera de casa.' },
+    { id:uid(), t:'Vuelta casa', c:'desplaz', s:17, e:17.25, n:'15 min de vuelta.' },
+    { id:uid(), t:'Tratamiento Helena', c:'helena', s:16.75, e:18, n:'Helena en casa, 16:45–18:00h (1h15). Tú ya estás de vuelta del billar.' },
+    { id:uid(), t:'Tiempo con Helena', c:'social', s:18, e:19.5, n:'Tarde de calidad con Helena.' },
+    { id:uid(), t:'Cena con Helena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Noche con Helena', c:'libre', s:20.25, e:23, n:'Noche tranquila.' },
+  ],
+  [ // SÁB
+    { id:uid(), t:'Mañana libre', c:'libre', s:9, e:10, n:'Sábado sin prisas.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:10, e:12, n:'2h de modelado.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'Tarde libre', c:'ocio', s:13.5, e:17, n:'Paseo, playa o videojuegos.' },
+    { id:uid(), t:'Cena con Dani', c:'social', s:19.75, e:20.25, n:'Cena semanal con Dani.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura.' },
+  ],
+  [ // DOM
+    { id:uid(), t:'Mañana tranquila', c:'libre', s:9, e:11, n:'Sin agenda. Lectura, desayuno.' },
+    { id:uid(), t:'Estudio', c:'estudio', s:11, e:12, n:'1h de repaso.' },
+    { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
+    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
+    { id:uid(), t:'Videojuegos', c:'ocio', s:13.5, e:16.5, n:'Tarde libre de domingo.' },
+    { id:uid(), t:'Planificación semana', c:'libre', s:16.5, e:18, n:'Revisar y preparar la semana.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura antes de dormir.' },
+  ],
+];
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+function hToStr(h) {
+  const hh = Math.floor(h);
+  const mm = Math.round((h - hh) * 60);
+  return hh.toString().padStart(2,'0') + ':' + mm.toString().padStart(2,'0');
+}
+function strToH(s) {
+  const [hh, mm] = s.split(':').map(Number);
+  return hh + mm / 60;
+}
+function hToPx(h) { return (h - START_H) * SLOT; }
+function pxToH(px) { return Math.round((px / SLOT + START_H) * 4) / 4; }
+
+// ── STATE ──
+let schedule = loadSchedule();
+let activeDay = 0;
+
+function loadSchedule() {
+  try {
+    const saved = localStorage.getItem('mi-semana-schedule');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return DEFAULT_SCHEDULE.map(day => day.map(ev => ({...ev, id: uid()})));
+}
+function saveSchedule() {
+  try { localStorage.setItem('mi-semana-schedule', JSON.stringify(schedule)); } catch(e) {}
+}
+
+// ── VIEW SWITCHING ──
+let currentView = 'week';
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('btn-view-week').classList.toggle('active', v === 'week');
+  document.getElementById('btn-view-day').classList.toggle('active', v === 'day');
+  document.getElementById('day-tabs').style.display = v === 'day' ? 'flex' : 'none';
+  document.getElementById('cal-scroll').style.display = v === 'day' ? 'flex' : 'none';
+  document.getElementById('week-grid-wrap').style.display = v === 'week' ? 'block' : 'none';
+  document.getElementById('calls-section').style.display = 'flex';
+  if (v === 'week') renderWeek();
+  else renderDay();
+}
+
+function renderWeek() {
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+  const totalH = (END_H - START_H) * SLOT;
+
+  // Header row
+  const emptyHead = document.createElement('div');
+  emptyHead.className = 'wg-head-empty';
+  emptyHead.style.borderBottom = '1px solid var(--border)';
+  grid.appendChild(emptyHead);
+
+  DAYS.forEach((d, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'wg-head-cell' + (i === activeDay ? ' active-day' : '');
+    cell.innerHTML = '<span class="dn">' + d.name + '</span><span class="dd">' + d.date + '</span>';
+    cell.onclick = () => { activeDay = i; setView('day'); };
+    grid.appendChild(cell);
+  });
+
+  // Time + day columns
+  const timeCol = document.createElement('div');
+  timeCol.className = 'wg-time-col';
+  timeCol.style.height = totalH + 'px';
+  for (let h = START_H; h < END_H; h++) {
+    const s = document.createElement('div');
+    s.className = 'wg-time-slot';
+    s.textContent = h + ':00';
+    timeCol.appendChild(s);
+  }
+  grid.appendChild(timeCol);
+
+  DAYS.forEach((d, di) => {
+    const col = document.createElement('div');
+    col.className = 'wg-day-col';
+    col.style.height = totalH + 'px';
+    col.style.position = 'relative';
+
+    for (let h = START_H; h < END_H; h++) {
+      const row = document.createElement('div');
+      row.className = 'wg-hour-row';
+      row.style.top = hToPx(h) + 'px';
+      col.appendChild(row);
+    }
+
+    (schedule[di] || []).forEach(ev => {
+      const top = hToPx(ev.s);
+      const height = Math.max(hToPx(ev.e) - top - 1, 10);
+      const el = document.createElement('div');
+      el.className = 'wg-event ev-' + ev.c;
+      el.style.top = top + 'px';
+      el.style.height = height + 'px';
+      el.innerHTML = '<div class="wg-event-title">' + ev.t + '</div>';
+      el.onclick = () => { activeDay = di; setView('day'); setTimeout(() => openModal(ev.id), 100); };
+      col.appendChild(el);
+    });
+
+    grid.appendChild(col);
+  });
+
+  // Scroll to 8am
+  setTimeout(() => {
+    document.getElementById('week-grid-wrap').scrollTop = hToPx(8);
+  }, 50);
+}
+
+// ── BUILD UI ──
+function buildTabs() {
+  const el = document.getElementById('day-tabs');
+  el.innerHTML = '';
+  DAYS.forEach((d, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'day-tab' + (i === activeDay ? ' active' : '');
+    tab.innerHTML = '<span style="font-weight:500">' + d.name + '</span><br><span style="font-size:9px;opacity:.7">' + d.date + '</span>';
+    tab.onclick = () => { activeDay = i; buildTabs(); renderDay(); };
+    el.appendChild(tab);
+  });
+}
+
+function renderDay() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  grid.style.height = (TOTAL * SLOT) + 'px';
+
+  // Time column
+  const timeCol = document.createElement('div');
+  timeCol.className = 'time-col';
+  for (let h = START_H; h < END_H; h++) {
+    const slot = document.createElement('div');
+    slot.className = 'time-slot';
+    slot.textContent = h + ':00';
+    timeCol.appendChild(slot);
+  }
+  grid.appendChild(timeCol);
+
+  // Events column
+  const evCol = document.createElement('div');
+  evCol.className = 'events-col';
+  evCol.style.position = 'relative';
+  evCol.style.height = (TOTAL * SLOT) + 'px';
+
+  // Hour rows background
+  for (let h = START_H; h < END_H; h++) {
+    const row = document.createElement('div');
+    row.className = 'hour-row half';
+    row.style.top = hToPx(h) + 'px';
+    row.style.position = 'absolute';
+    row.style.left = '0'; row.style.right = '0';
+    evCol.appendChild(row);
+  }
+
+  // Events
+  const evs = schedule[activeDay] || [];
+  evs.forEach(ev => {
+    const el = createEventEl(ev);
+    evCol.appendChild(el);
+  });
+
+  grid.appendChild(evCol);
+
+  // Scroll to 8am
+  setTimeout(() => {
+    const scroll = document.getElementById('cal-scroll');
+    scroll.scrollTop = hToPx(8);
+  }, 50);
+}
+
+function createEventEl(ev) {
+  const cat = CATEGORIES.find(c => c.id === ev.c) || CATEGORIES[8];
+  const top = hToPx(ev.s);
+  const height = hToPx(ev.e) - top;
+
+  const el = document.createElement('div');
+  el.className = 'event ev-' + ev.c;
+  el.style.top = top + 'px';
+  el.style.height = Math.max(height - 2, 18) + 'px';
+  el.dataset.id = ev.id;
+
+  el.innerHTML = `
+    <div class="event-title">${ev.t}</div>
+    ${height > 30 ? '<div class="event-time">' + hToStr(ev.s) + '–' + hToStr(ev.e) + '</div>' : ''}
+    <div class="resize-handle" data-resize="true"></div>
+  `;
+
+  // Tap to edit
+  let tapTimer, moved = false;
+  el.addEventListener('pointerdown', e => {
+    if (e.target.dataset.resize) return;
+    moved = false;
+    tapTimer = setTimeout(() => {
+      if (!moved) openModal(ev.id);
+    }, 200);
+  });
+  el.addEventListener('pointermove', () => { moved = true; });
+
+  // Drag to move
+  let dragStart = null, origS, origE;
+  el.addEventListener('pointerdown', e => {
+    if (e.target.dataset.resize) return;
+    el.setPointerCapture(e.pointerId);
+    dragStart = e.clientY;
+    origS = ev.s; origE = ev.e;
+
+    el.addEventListener('pointermove', onDragMove);
+    el.addEventListener('pointerup', onDragEnd, { once: true });
+  });
+
+  function onDragMove(e) {
+    if (!dragStart) return;
+    const dy = e.clientY - dragStart;
+    const dh = dy / SLOT;
+    const dur = origE - origS;
+    let ns = Math.round((origS + dh) * 4) / 4;
+    ns = Math.max(START_H, Math.min(END_H - dur, ns));
+    ev.s = ns; ev.e = ns + dur;
+    el.style.top = hToPx(ev.s) + 'px';
+    el.classList.add('dragging');
+    const timeEl = el.querySelector('.event-time');
+    if (timeEl) timeEl.textContent = hToStr(ev.s) + '–' + hToStr(ev.e);
+  }
+
+  function onDragEnd() {
+    dragStart = null;
+    el.classList.remove('dragging');
+    el.removeEventListener('pointermove', onDragMove);
+    saveSchedule();
+  }
+
+  // Resize
+  const handle = el.querySelector('[data-resize]');
+  let resizeStart = null, origEnd;
+  handle.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    handle.setPointerCapture(e.pointerId);
+    resizeStart = e.clientY;
+    origEnd = ev.e;
+
+    handle.addEventListener('pointermove', onResizeMove);
+    handle.addEventListener('pointerup', onResizeEnd, { once: true });
+  });
+
+  function onResizeMove(e) {
+    if (resizeStart === null) return;
+    const dy = e.clientY - resizeStart;
+    const dh = dy / SLOT;
+    let ne = Math.round((origEnd + dh) * 4) / 4;
+    ne = Math.max(ev.s + 0.25, Math.min(END_H, ne));
+    ev.e = ne;
+    el.style.height = Math.max(hToPx(ev.e) - hToPx(ev.s) - 2, 18) + 'px';
+    const timeEl = el.querySelector('.event-time');
+    if (timeEl) timeEl.textContent = hToStr(ev.s) + '–' + hToStr(ev.e);
+  }
+
+  function onResizeEnd() {
+    resizeStart = null;
+    handle.removeEventListener('pointermove', onResizeMove);
+    saveSchedule();
+  }
+
+  return el;
+}
+
+// ── MODAL ──
+let editingId = null;
+let selectedCat = 'libre';
+
+function openModal(id) {
+  editingId = id;
+  const isNew = !id;
+  const ev = id ? schedule[activeDay].find(e => e.id === id) : null;
+
+  document.getElementById('modal-title').textContent = isNew ? 'Nuevo bloque' : 'Editar bloque';
+  document.getElementById('inp-title').value = ev ? ev.t : '';
+  document.getElementById('inp-note').value = ev ? ev.n : '';
+  document.getElementById('inp-start').value = ev ? hToStr(ev.s) : '09:00';
+  document.getElementById('inp-end').value = ev ? hToStr(ev.e) : '10:00';
+  document.getElementById('btn-delete').style.display = isNew ? 'none' : 'block';
+
+  selectedCat = ev ? ev.c : 'libre';
+  buildCatGrid();
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  editingId = null;
+}
+
+function buildCatGrid() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn ev-' + cat.id + (cat.id === selectedCat ? ' selected' : '');
+    btn.textContent = cat.label;
+    btn.onclick = () => { selectedCat = cat.id; buildCatGrid(); };
+    grid.appendChild(btn);
+  });
+}
+
+document.getElementById('btn-add').onclick = () => openModal(null);
+document.getElementById('btn-cancel').onclick = closeModal;
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+document.getElementById('btn-save').onclick = () => {
+  const t = document.getElementById('inp-title').value.trim() || 'Sin título';
+  const n = document.getElementById('inp-note').value.trim();
+  const s = strToH(document.getElementById('inp-start').value);
+  const e = strToH(document.getElementById('inp-end').value);
+  if (e <= s) { alert('La hora de fin debe ser posterior al inicio.'); return; }
+
+  if (editingId) {
+    const ev = schedule[activeDay].find(ev => ev.id === editingId);
+    if (ev) { ev.t = t; ev.n = n; ev.s = s; ev.e = e; ev.c = selectedCat; }
+  } else {
+    schedule[activeDay].push({ id: uid(), t, n, s, e, c: selectedCat });
+  }
+  saveSchedule();
+  closeModal();
+  renderDay();
+};
+
+document.getElementById('btn-delete').onclick = () => {
+  if (!editingId) return;
+  schedule[activeDay] = schedule[activeDay].filter(ev => ev.id !== editingId);
+  saveSchedule();
+  closeModal();
+  renderDay();
+};
+
+// ── INIT ──
+buildCatGrid();
+buildTabs();
+setView('week');
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
