@@ -84,12 +84,20 @@ body {
 .cal-scroll {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  width: 100%;
 }
 
 .cal-grid {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 44px minmax(0, 1fr);
   position: relative;
+  width: 100%;
+}
+
+.events-col {
+  position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
 .time-col { position: sticky; left: 0; z-index: 5; background: var(--bg); }
@@ -100,7 +108,6 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.events-col { position: relative; }
 .hour-row {
   height: var(--slot);
   border-bottom: 1px solid var(--border);
