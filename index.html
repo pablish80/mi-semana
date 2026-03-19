@@ -85,6 +85,7 @@ body {
   flex: 1; overflow-y: auto; overflow-x: hidden;
   scrollbar-width: thin; scrollbar-color: var(--border) transparent;
   width: 100%;
+  display: block;
 }
 
 .cal-grid {
@@ -517,7 +518,7 @@ function setView(v) {
   document.getElementById('btn-view-week').classList.toggle('active', v === 'week');
   document.getElementById('btn-view-day').classList.toggle('active', v === 'day');
   document.getElementById('day-tabs').style.display = v === 'day' ? 'flex' : 'none';
-  document.getElementById('cal-scroll').style.display = v === 'day' ? 'flex' : 'none';
+  document.getElementById('cal-scroll').style.display = v === 'day' ? 'block' : 'none';
   document.getElementById('week-grid-wrap').style.display = v === 'week' ? 'block' : 'none';
   document.getElementById('calls-section').style.display = 'flex';
   if (v === 'week') renderWeek();
