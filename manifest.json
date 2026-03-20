@@ -1,6 +1,6 @@
 {
-  "name": "Mi Semana",
-  "short_name": "Mi Semana",
+  "name": "Scheda",
+  "short_name": "Scheda",
   "description": "Organizador semanal personal",
   "start_url": "./index.html",
   "display": "standalone",

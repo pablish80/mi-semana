@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f0e0c">
-<title>Mi Semana</title>
+<title>Scheda</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -61,6 +61,16 @@ body {
   cursor: pointer; flex-shrink: 0;
 }
 
+/* ── SYNC STATUS ── */
+.sync-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+  transition: background .3s;
+}
+.sync-dot.syncing { background: var(--accent); }
+.sync-dot.ok      { background: #9FE1CB; }
+.sync-dot.error   { background: #E24B4A; }
+
 /* ── DAY TABS ── */
 .day-tabs {
   display: flex; gap: 4px; padding: 8px 12px;
@@ -80,42 +90,59 @@ body {
   border-color: var(--accent); font-weight: 500;
 }
 
-/* ── CALENDAR GRID ── */
+/* ── CALENDAR GRID (DAY VIEW) — fixed layout for Android ── */
 .cal-scroll {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
   width: 100%;
   display: block;
 }
 
 .cal-grid {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  display: block;
   position: relative;
   width: 100%;
+}
+
+.time-col {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  z-index: 5;
+  background: var(--bg);
+}
+
+.time-slot {
+  height: var(--slot);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 3px 8px 0 0;
+  font-size: 9px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
 }
 
 .events-col {
   position: relative;
-  width: 100%;
+  margin-left: 44px;
+  width: calc(100% - 44px);
   min-width: 0;
-}
-
-.time-col { position: sticky; left: 0; z-index: 5; background: var(--bg); }
-.time-slot {
-  height: var(--slot); display: flex; align-items: flex-start;
-  justify-content: flex-end; padding: 3px 8px 0 0;
-  font-size: 9px; color: var(--muted);
-  border-bottom: 1px solid var(--border);
 }
 
 .hour-row {
   height: var(--slot);
   border-bottom: 1px solid var(--border);
+  position: absolute;
+  left: 0; right: 0;
 }
 .hour-row.half::after {
   content: ''; display: block;
-  position: absolute; left: 44px; right: 0;
+  position: absolute; left: 0; right: 0;
   top: calc(var(--slot) / 2);
   border-top: 1px dashed rgba(255,255,255,.06);
 }
@@ -123,16 +150,38 @@ body {
 /* ── EVENT BLOCKS ── */
 .event {
   position: absolute; left: 6px; right: 6px;
-  border-radius: 6px; padding: 5px 7px;
+  border-radius: 6px;
+  padding: 4px 6px;
   border-left: 3px solid;
   overflow: hidden; cursor: pointer;
   touch-action: none;
   transition: box-shadow .15s;
   z-index: 2;
+  /* centrado vertical y horizontal del contenido */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .event.dragging { z-index: 100; opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
-.event-title { font-size: 10px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.event-time  { font-size: 9px; opacity: .75; margin-top: 1px; }
+
+.event-title {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.event-time {
+  font-size: 9px;
+  opacity: .75;
+  margin-top: 2px;
+  text-align: center;
+}
 
 .resize-handle {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -293,23 +342,33 @@ body {
   font-size: 8px; line-height: 1.2;
   cursor: pointer; z-index: 2;
   transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center;
 }
 .wg-event:hover { opacity: .8; }
-.wg-event-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wg-event-title {
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
 </style>
 </head>
 <body>
 
 <div class="app-header">
   <div>
-    <div class="app-title">Mi Semana</div>
-    <div class="week-label" id="week-label">23 – 29 Mar 2026</div>
+    <div class="app-title">Scheda</div>
+    <div class="week-label" id="week-label">Cargando…</div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <div class="view-toggle">
       <button class="view-btn active" id="btn-view-week" onclick="setView('week')">Semana</button>
       <button class="view-btn" id="btn-view-day" onclick="setView('day')">Día</button>
     </div>
+    <div class="sync-dot" id="sync-dot" title="Estado sync"></div>
     <button class="btn-add" id="btn-add" title="Añadir bloque">+</button>
   </div>
 </div>
@@ -324,11 +383,7 @@ body {
 
 <div class="calls-section" id="calls-section">
   <div class="calls-label">Llamadas esta semana</div>
-  <div class="calls-chips">
-    <span class="chip chip-weekly">Ricky</span>
-    <span class="chip chip-monthly">Donald</span>
-    <span class="chip chip-monthly">Dani G.</span>
-  </div>
+  <div class="calls-chips" id="calls-chips"></div>
 </div>
 
 <!-- MODAL -->
@@ -372,6 +427,83 @@ body {
 </div>
 
 <script>
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = 'https://xvuepvqwjtahigxyppte.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2dWVwdnF3anRhaGlneHlwcHRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTM4MDQsImV4cCI6MjA4OTU2OTgwNH0.qr0qcXIyK6AdtgRSGTcSvEWHTVJhQTQ6wOFvsqh5URU';
+
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+};
+
+function getWeekKey() {
+  const now = new Date();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const y = mon.getFullYear();
+  const start = new Date(y, 0, 1);
+  const w = Math.ceil(((mon - start) / 86400000 + start.getDay() + 1) / 7);
+  return y + '-W' + String(w).padStart(2, '0');
+}
+
+function setSyncDot(state) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-dot ' + state;
+}
+
+async function loadFromSupabase() {
+  setSyncDot('syncing');
+  try {
+    const weekKey = getWeekKey();
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/schedules?week_key=eq.' + weekKey + '&select=data,calls',
+      { headers: HEADERS }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    setSyncDot('ok');
+    if (rows.length > 0) {
+      // Save locally too
+      localStorage.setItem('scheda-schedule', JSON.stringify(rows[0].data));
+      if (rows[0].calls) localStorage.setItem('scheda-calls', JSON.stringify(rows[0].calls));
+      return { schedule: rows[0].data, calls: rows[0].calls || null };
+    }
+    return null;
+  } catch(e) {
+    setSyncDot('error');
+    return null;
+  }
+}
+
+async function saveToSupabase(scheduleData, callsData) {
+  setSyncDot('syncing');
+  try {
+    const weekKey = getWeekKey();
+    const body = {
+      week_key: weekKey,
+      data: scheduleData,
+      calls: callsData || null,
+      updated_at: new Date().toISOString()
+    };
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/schedules',
+      {
+        method: 'POST',
+        headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(body)
+      }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    setSyncDot('ok');
+    // Fade dot back to neutral after 2s
+    setTimeout(() => setSyncDot(''), 2000);
+  } catch(e) {
+    setSyncDot('error');
+  }
+}
+
+// ── CATEGORIES ──
 const CATEGORIES = [
   { id:'trabajo',   label:'Trabajo MD',  cls:'ev-trabajo' },
   { id:'prohps',    label:'PROHPS 3D',   cls:'ev-prohps' },
@@ -386,30 +518,44 @@ const CATEGORIES = [
 ];
 
 const START_H = 7, END_H = 24, TOTAL = END_H - START_H;
-const SLOT = 52; // px per hour
+const SLOT = 52;
 
-const DAYS = [
-  { name:'Lun', date:'23 Mar' },
-  { name:'Mar', date:'24 Mar' },
-  { name:'Mié', date:'25 Mar' },
-  { name:'Jue', date:'26 Mar' },
-  { name:'Vie', date:'27 Mar' },
-  { name:'Sáb', date:'28 Mar' },
-  { name:'Dom', date:'29 Mar' },
-];
+// ── DAYS (current week, Mon–Sun) ──
+function buildDays() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const days = [];
+  const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push({
+      name: dayNames[i],
+      date: d.getDate() + ' ' + monthNames[d.getMonth()]
+    });
+  }
+  // Update header label
+  const endDay = new Date(monday); endDay.setDate(monday.getDate() + 6);
+  document.getElementById('week-label').textContent =
+    monday.getDate() + ' – ' + endDay.getDate() + ' ' +
+    monthNames[endDay.getMonth()] + ' ' + endDay.getFullYear();
+  return days;
+}
 
+const DAYS = buildDays();
+
+// ── DEFAULT SCHEDULE ──
 const DEFAULT_SCHEDULE = [
   [ // LUN
-    { id:uid(), t:'Desayuno Ricky', c:'social', s:8, e:9, n:'Desayuno quincenal. Si no toca, tiempo libre.' },
     { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:12, n:'3h de trabajo para MD.' },
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
     { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
     { id:uid(), t:'PROHPS 3D', c:'prohps', s:13.5, e:16.5, n:'3h de modelado 3D.' },
     { id:uid(), t:'Estudio', c:'estudio', s:16.5, e:17.5, n:'1h — Comfy UI / Unreal Engine.' },
-    { id:uid(), t:'Llamada Ricky', c:'social', s:19, e:19.5, n:'Llamada semanal ~30 min.' },
     { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
-    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
-    { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura antes de dormir.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura antes de dormir.' },
   ],
   [ // MAR
     { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:12, n:'3h para MD.' },
@@ -421,7 +567,6 @@ const DEFAULT_SCHEDULE = [
     { id:uid(), t:'Estudio', c:'estudio', s:16, e:17, n:'1h — Comfy UI / Unreal.' },
     { id:uid(), t:'PROHPS 3D', c:'prohps', s:17, e:19, n:'2h de modelado.' },
     { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
-    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
     { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura.' },
   ],
   [ // MIÉ
@@ -429,52 +574,46 @@ const DEFAULT_SCHEDULE = [
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
     { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
     { id:uid(), t:'PROHPS 3D', c:'prohps', s:13.5, e:16.5, n:'3h de modelado.' },
-    { id:uid(), t:'Estudio', c:'estudio', s:16.5, e:17.5, n:'1h — Comfy UI / Unreal. Completa 6h.' },
-    { id:uid(), t:'Llamada Donald', c:'social', s:19, e:19.5, n:'Contacto mensual ~30 min.' },
+    { id:uid(), t:'Estudio', c:'estudio', s:16.5, e:17.5, n:'1h — Comfy UI / Unreal.' },
     { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
-    { id:uid(), t:'Videojuegos', c:'ocio', s:20.25, e:21.25, n:'1h de ocio.' },
     { id:uid(), t:'Noche libre', c:'libre', s:21.25, e:23, n:'Lectura.' },
   ],
   [ // JUE
-    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:11, n:'2h para MD. Cierra las 12h.' },
-    { id:uid(), t:'PROHPS 3D', c:'prohps', s:11, e:12, n:'1h — completa 12h del modelo.' },
+    { id:uid(), t:'Trabajo MD', c:'trabajo', s:9, e:11, n:'2h para MD.' },
+    { id:uid(), t:'PROHPS 3D', c:'prohps', s:11, e:12, n:'1h modelado.' },
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
     { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
     { id:uid(), t:'Desplazamiento', c:'desplaz', s:13.5, e:13.75, n:'15 min al club.' },
     { id:uid(), t:'Entreno billar', c:'social', s:13.75, e:15.75, n:'2h de entrenamiento.' },
     { id:uid(), t:'Vuelta casa', c:'desplaz', s:15.75, e:16, n:'15 min de vuelta.' },
-    { id:uid(), t:'Prep. clase', c:'libre', s:16, e:17.75, n:'Descansa antes de ECO.' },
-    { id:uid(), t:'Clase ECO', c:'clase', s:18, e:19, n:'Clase online ECO. Sin cena.' },
-    { id:uid(), t:'Llamada Dani G.', c:'social', s:19, e:19.5, n:'Contacto mensual ~30 min.' },
-    { id:uid(), t:'Noche libre', c:'libre', s:19.5, e:23, n:'Sin cena este día. Lectura.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura.' },
   ],
   [ // VIE
     { id:uid(), t:'Mañana libre', c:'libre', s:9, e:12, n:'Viernes sin trabajo MD.' },
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
     { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
     { id:uid(), t:'Desplazamiento', c:'desplaz', s:14.25, e:14.5, n:'15 min al club.' },
-    { id:uid(), t:'Entreno billar', c:'social', s:14.5, e:17, n:'14:30–17:00h. Estarás fuera de casa.' },
+    { id:uid(), t:'Entreno billar', c:'social', s:14.5, e:17, n:'14:30–17:00h.' },
     { id:uid(), t:'Vuelta casa', c:'desplaz', s:17, e:17.25, n:'15 min de vuelta.' },
-    { id:uid(), t:'Tratamiento Helena', c:'helena', s:16.75, e:18, n:'Helena en casa, 16:45–18:00h (1h15). Tú ya estás de vuelta del billar.' },
-    { id:uid(), t:'Tiempo con Helena', c:'social', s:18, e:19.5, n:'Tarde de calidad con Helena.' },
-    { id:uid(), t:'Cena con Helena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
-    { id:uid(), t:'Noche con Helena', c:'libre', s:20.25, e:23, n:'Noche tranquila.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
+    { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura.' },
   ],
   [ // SÁB
     { id:uid(), t:'Mañana libre', c:'libre', s:9, e:10, n:'Sábado sin prisas.' },
     { id:uid(), t:'PROHPS 3D', c:'prohps', s:10, e:12, n:'2h de modelado.' },
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
-    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
-    { id:uid(), t:'Tarde libre', c:'ocio', s:13.5, e:17, n:'Paseo, playa o videojuegos.' },
-    { id:uid(), t:'Cena con Dani', c:'social', s:19.75, e:20.25, n:'Cena semanal con Dani.' },
+    { id:uid(), t:'Comida', c:'libre', s:13.5, e:14.5, n:'Comida sobre las 13:30h.' },
+    { id:uid(), t:'Tarde libre', c:'ocio', s:14.5, e:17, n:'Paseo, playa o videojuegos.' },
+    { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
     { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura.' },
   ],
   [ // DOM
-    { id:uid(), t:'Mañana tranquila', c:'libre', s:9, e:11, n:'Sin agenda. Lectura, desayuno.' },
+    { id:uid(), t:'Mañana tranquila', c:'libre', s:9, e:11, n:'Sin agenda.' },
     { id:uid(), t:'Estudio', c:'estudio', s:11, e:12, n:'1h de repaso.' },
     { id:uid(), t:'Ejercicio', c:'ejercicio', s:12, e:12.58, n:'35 min en casa.' },
-    { id:uid(), t:'Comida', c:'libre', s:12.5, e:13.5, n:'Comida sobre las 12:30h.' },
-    { id:uid(), t:'Videojuegos', c:'ocio', s:13.5, e:16.5, n:'Tarde libre de domingo.' },
+    { id:uid(), t:'Comida', c:'libre', s:13.5, e:14.5, n:'Comida sobre las 13:30h.' },
+    { id:uid(), t:'Videojuegos', c:'ocio', s:14.5, e:16.5, n:'Tarde libre.' },
     { id:uid(), t:'Planificación semana', c:'libre', s:16.5, e:18, n:'Revisar y preparar la semana.' },
     { id:uid(), t:'Cena', c:'libre', s:19.75, e:20.25, n:'Cena 19:45–20:15h.' },
     { id:uid(), t:'Noche libre', c:'libre', s:20.25, e:23, n:'Lectura antes de dormir.' },
@@ -493,21 +632,51 @@ function strToH(s) {
   return hh + mm / 60;
 }
 function hToPx(h) { return (h - START_H) * SLOT; }
-function pxToH(px) { return Math.round((px / SLOT + START_H) * 4) / 4; }
 
 // ── STATE ──
-let schedule = loadSchedule();
-let activeDay = 0;
+let schedule = [];
+let callsData = null;
+let activeDay = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1; // today
 
-function loadSchedule() {
+function loadLocal() {
   try {
-    const saved = localStorage.getItem('mi-semana-schedule');
+    const saved = localStorage.getItem('scheda-schedule');
     if (saved) return JSON.parse(saved);
   } catch(e) {}
   return DEFAULT_SCHEDULE.map(day => day.map(ev => ({...ev, id: uid()})));
 }
-function saveSchedule() {
-  try { localStorage.setItem('mi-semana-schedule', JSON.stringify(schedule)); } catch(e) {}
+
+function saveLocal() {
+  try { localStorage.setItem('scheda-schedule', JSON.stringify(schedule)); } catch(e) {}
+  if (callsData) try { localStorage.setItem('scheda-calls', JSON.stringify(callsData)); } catch(e) {}
+}
+
+async function saveSchedule() {
+  saveLocal();
+  await saveToSupabase(schedule, callsData);
+}
+
+// ── CALLS SECTION ──
+function renderCalls() {
+  const container = document.getElementById('calls-chips');
+  container.innerHTML = '';
+  if (!callsData) return;
+  if (callsData.weekly && callsData.weekly.length) {
+    callsData.weekly.forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = 'chip chip-weekly';
+      chip.textContent = name;
+      container.appendChild(chip);
+    });
+  }
+  if (callsData.monthly && callsData.monthly.length) {
+    callsData.monthly.forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = 'chip chip-monthly';
+      chip.textContent = name;
+      container.appendChild(chip);
+    });
+  }
 }
 
 // ── VIEW SWITCHING ──
@@ -520,7 +689,6 @@ function setView(v) {
   document.getElementById('day-tabs').style.display = v === 'day' ? 'flex' : 'none';
   document.getElementById('cal-scroll').style.display = v === 'day' ? 'block' : 'none';
   document.getElementById('week-grid-wrap').style.display = v === 'week' ? 'block' : 'none';
-  document.getElementById('calls-section').style.display = 'flex';
   if (v === 'week') renderWeek();
   else renderDay();
 }
@@ -530,7 +698,6 @@ function renderWeek() {
   grid.innerHTML = '';
   const totalH = (END_H - START_H) * SLOT;
 
-  // Header row
   const emptyHead = document.createElement('div');
   emptyHead.className = 'wg-head-empty';
   emptyHead.style.borderBottom = '1px solid var(--border)';
@@ -544,7 +711,6 @@ function renderWeek() {
     grid.appendChild(cell);
   });
 
-  // Time + day columns
   const timeCol = document.createElement('div');
   timeCol.className = 'wg-time-col';
   timeCol.style.height = totalH + 'px';
@@ -584,13 +750,11 @@ function renderWeek() {
     grid.appendChild(col);
   });
 
-  // Scroll to 8am
   setTimeout(() => {
     document.getElementById('week-grid-wrap').scrollTop = hToPx(8);
   }, 50);
 }
 
-// ── BUILD UI ──
 function buildTabs() {
   const el = document.getElementById('day-tabs');
   el.innerHTML = '';
@@ -604,13 +768,16 @@ function buildTabs() {
 }
 
 function renderDay() {
+  buildTabs();
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
   grid.style.height = (TOTAL * SLOT) + 'px';
+  grid.style.position = 'relative';
 
-  // Time column
+  // Time column (absolute)
   const timeCol = document.createElement('div');
   timeCol.className = 'time-col';
+  timeCol.style.height = (TOTAL * SLOT) + 'px';
   for (let h = START_H; h < END_H; h++) {
     const slot = document.createElement('div');
     slot.className = 'time-slot';
@@ -619,23 +786,18 @@ function renderDay() {
   }
   grid.appendChild(timeCol);
 
-  // Events column
+  // Events column (margin-left: 44px)
   const evCol = document.createElement('div');
   evCol.className = 'events-col';
-  evCol.style.position = 'relative';
   evCol.style.height = (TOTAL * SLOT) + 'px';
 
-  // Hour rows background
   for (let h = START_H; h < END_H; h++) {
     const row = document.createElement('div');
     row.className = 'hour-row half';
     row.style.top = hToPx(h) + 'px';
-    row.style.position = 'absolute';
-    row.style.left = '0'; row.style.right = '0';
     evCol.appendChild(row);
   }
 
-  // Events
   const evs = schedule[activeDay] || [];
   evs.forEach(ev => {
     const el = createEventEl(ev);
@@ -644,7 +806,6 @@ function renderDay() {
 
   grid.appendChild(evCol);
 
-  // Scroll to 8am
   setTimeout(() => {
     const scroll = document.getElementById('cal-scroll');
     scroll.scrollTop = hToPx(8);
@@ -652,7 +813,6 @@ function renderDay() {
 }
 
 function createEventEl(ev) {
-  const cat = CATEGORIES.find(c => c.id === ev.c) || CATEGORIES[8];
   const top = hToPx(ev.s);
   const height = hToPx(ev.e) - top;
 
@@ -664,7 +824,7 @@ function createEventEl(ev) {
 
   el.innerHTML = `
     <div class="event-title">${ev.t}</div>
-    ${height > 30 ? '<div class="event-time">' + hToStr(ev.s) + '–' + hToStr(ev.e) + '</div>' : ''}
+    ${height > 36 ? '<div class="event-time">' + hToStr(ev.s) + '–' + hToStr(ev.e) + '</div>' : ''}
     <div class="resize-handle" data-resize="true"></div>
   `;
 
@@ -673,9 +833,7 @@ function createEventEl(ev) {
   el.addEventListener('pointerdown', e => {
     if (e.target.dataset.resize) return;
     moved = false;
-    tapTimer = setTimeout(() => {
-      if (!moved) openModal(ev.id);
-    }, 200);
+    tapTimer = setTimeout(() => { if (!moved) openModal(ev.id); }, 200);
   });
   el.addEventListener('pointermove', () => { moved = true; });
 
@@ -686,7 +844,6 @@ function createEventEl(ev) {
     el.setPointerCapture(e.pointerId);
     dragStart = e.clientY;
     origS = ev.s; origE = ev.e;
-
     el.addEventListener('pointermove', onDragMove);
     el.addEventListener('pointerup', onDragEnd, { once: true });
   });
@@ -720,7 +877,6 @@ function createEventEl(ev) {
     handle.setPointerCapture(e.pointerId);
     resizeStart = e.clientY;
     origEnd = ev.e;
-
     handle.addEventListener('pointermove', onResizeMove);
     handle.addEventListener('pointerup', onResizeEnd, { once: true });
   });
@@ -764,7 +920,6 @@ function openModal(id) {
 
   selectedCat = ev ? ev.c : 'libre';
   buildCatGrid();
-
   document.getElementById('modal').classList.add('open');
 }
 
@@ -818,13 +973,31 @@ document.getElementById('btn-delete').onclick = () => {
 };
 
 // ── INIT ──
-buildCatGrid();
-buildTabs();
-setView('week');
+async function init() {
+  buildCatGrid();
+
+  // Try Supabase first, fall back to localStorage
+  const remote = await loadFromSupabase();
+  if (remote && remote.schedule) {
+    schedule = remote.schedule;
+    callsData = remote.calls;
+  } else {
+    schedule = loadLocal();
+    try {
+      const savedCalls = localStorage.getItem('scheda-calls');
+      if (savedCalls) callsData = JSON.parse(savedCalls);
+    } catch(e) {}
+  }
+
+  renderCalls();
+  setView('week');
+}
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
+
+init();
 </script>
 </body>
 </html>

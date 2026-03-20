@@ -1,4 +1,4 @@
-const CACHE = 'mi-semana-v1';
+const CACHE = 'scheda-v1';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
