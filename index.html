@@ -13,7 +13,6 @@
 <style>
 :root {
   color-scheme: dark;
-  forced-color-adjust: none;
   --bg: #0f0e0c;
   --surface: #1a1916;
   --border: #2e2c28;
@@ -36,7 +35,7 @@
   --c-desplaz:  #DCDCE8;   --c-desplaz-t:  #2C2C3A;   --c-desplaz-b:  #8888A8;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-forced-color-adjust: none !important; forced-color-adjust: none !important; }
 
 body {
   background: var(--bg); color: var(--text);
@@ -169,7 +168,6 @@ body {
   position: absolute; left: 1px; right: 1px; border-radius: 3px; padding: 1px 3px;
   border-left: 2px solid; overflow: hidden; font-size: 8px; cursor: pointer; z-index: 2;
   display: flex; align-items: center; justify-content: center;
-  forced-color-adjust: none;
 }
 .wg-event:hover { opacity: .8; }
 .wg-event-title {
@@ -182,7 +180,6 @@ body {
   position: absolute; left: 6px; right: 6px; border-radius: 6px; padding: 4px 6px;
   border-left: 3px solid; overflow: hidden; cursor: pointer; touch-action: none;
   z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  forced-color-adjust: none;
 }
 .event.dragging { z-index: 100; opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .event-title {
