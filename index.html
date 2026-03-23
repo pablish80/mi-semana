@@ -6,12 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f0e0c">
 <meta name="color-scheme" content="dark">
+<meta name="darkreader-lock">
 <title>Scheda</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   color-scheme: dark;
+  forced-color-adjust: none;
   --bg: #0f0e0c;
   --surface: #1a1916;
   --border: #2e2c28;
@@ -167,6 +169,7 @@ body {
   position: absolute; left: 1px; right: 1px; border-radius: 3px; padding: 1px 3px;
   border-left: 2px solid; overflow: hidden; font-size: 8px; cursor: pointer; z-index: 2;
   display: flex; align-items: center; justify-content: center;
+  forced-color-adjust: none;
 }
 .wg-event:hover { opacity: .8; }
 .wg-event-title {
@@ -179,6 +182,7 @@ body {
   position: absolute; left: 6px; right: 6px; border-radius: 6px; padding: 4px 6px;
   border-left: 3px solid; overflow: hidden; cursor: pointer; touch-action: none;
   z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  forced-color-adjust: none;
 }
 .event.dragging { z-index: 100; opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 .event-title {
@@ -193,18 +197,18 @@ body {
 .resize-handle::after { content: ''; width: 24px; height: 2px; background: currentColor; opacity: .4; border-radius: 1px; }
 
 /* Category colors */
-.ev-fx        { background: var(--c-fx);        color: var(--c-fx-t);        border-color: var(--c-fx-b); }
-.ev-eco       { background: var(--c-eco);       color: var(--c-eco-t);       border-color: var(--c-eco-b); }
-.ev-md        { background: var(--c-md);        color: var(--c-md-t);        border-color: var(--c-md-b); }
-.ev-prohps    { background: var(--c-prohps);    color: var(--c-prohps-t);    border-color: var(--c-prohps-b); }
-.ev-estudio   { background: var(--c-estudio);   color: var(--c-estudio-t);   border-color: var(--c-estudio-b); }
-.ev-ejercicio { background: var(--c-ejercicio); color: var(--c-ejercicio-t); border-color: var(--c-ejercicio-b); }
-.ev-billar    { background: var(--c-billar);    color: var(--c-billar-t);    border-color: var(--c-billar-b); }
-.ev-social    { background: var(--c-social);    color: var(--c-social-t);    border-color: var(--c-social-b); }
-.ev-helena    { background: var(--c-helena);    color: var(--c-helena-t);    border-color: var(--c-helena-b); }
-.ev-ocio      { background: var(--c-ocio);      color: var(--c-ocio-t);      border-color: var(--c-ocio-b); }
-.ev-libre     { background: var(--c-libre);     color: var(--c-libre-t);     border-color: var(--c-libre-b); }
-.ev-desplaz   { background: var(--c-desplaz);   color: var(--c-desplaz-t);   border-color: var(--c-desplaz-b); }
+.ev-fx        { background: #FFF5C0 !important; color: #4A3C00 !important; border-color: #C8A800 !important; }
+.ev-eco       { background: #FFE97A !important; color: #4A3600 !important; border-color: #C89000 !important; }
+.ev-md        { background: #FFCC44 !important; color: #4A2E00 !important; border-color: #C87800 !important; }
+.ev-prohps    { background: #FFAA44 !important; color: #4A2200 !important; border-color: #C85800 !important; }
+.ev-estudio   { background: #C8DCEE !important; color: #1A3A50 !important; border-color: #6A9EC0 !important; }
+.ev-ejercicio { background: #C8E8D4 !important; color: #1A3A28 !important; border-color: #5AA07A !important; }
+.ev-billar    { background: #B8E8D0 !important; color: #103828 !important; border-color: #4A9070 !important; }
+.ev-social    { background: #F0E8D8 !important; color: #3A2E1A !important; border-color: #A09070 !important; }
+.ev-helena    { background: #F9D8D8 !important; color: #501313 !important; border-color: #C07080 !important; }
+.ev-ocio      { background: #2a2825 !important; color: #857f6e !important; border-color: #3e3b35 !important; }
+.ev-libre     { background: #2a2825 !important; color: #857f6e !important; border-color: #3e3b35 !important; }
+.ev-desplaz   { background: #DCDCE8 !important; color: #2C2C3A !important; border-color: #8888A8 !important; }
 
 /* ── MODAL ── */
 .modal-backdrop {
